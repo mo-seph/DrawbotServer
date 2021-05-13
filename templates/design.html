@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Drawing {{ id }} {% endblock %}</h1>
+    <h1>Original</h1>
+    <img src="/data/uploaded/{{id}}.svg" alt="Orignal SVG" class="preview">
+    <h1>Processed</h1>
+    <img src="/data/processed/{{id}}.svg" alt="Processed SVG" class="preview">
+    <h1>Check</h1>
+    <img src="/data/check/{{id}}.svg" alt="Regenerated SVG" class="preview">
+{% endblock %}

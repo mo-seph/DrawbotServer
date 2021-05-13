@@ -1,0 +1,9 @@
+
+
+.preview {
+ max-height:500px;
+ max-width:500px;
+ height:auto;
+ width:auto;
+ border: 2px solid green;
+}
