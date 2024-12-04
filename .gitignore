@@ -6,6 +6,8 @@ data/check_svg/*
 data/gcode/*
 data/processed/*
 data/uploaded/*
+data/cleaned/*
+data/regen/*
 
 
 # Byte-compiled / optimized / DLL files

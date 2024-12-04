@@ -1,0 +1,41 @@
+<div class="controls-container">
+<form method=post enctype=multipart/form-data>
+    <div class="controls-block border rounded">
+      <input type=file name=file>
+        <button type=submit class="btn btn-primary">Upload</button>
+    </div>
+    <div class="controls-block border rounded">
+      <h3>Bot</h3>
+        <div class="controls-row">
+            Width: {{setup.bot_width}}
+      </div>
+      <div class="controls-row">
+          Height: {{setup.bot_height}}
+      </div>
+    </div>
+    <div class="controls-block border rounded">  
+        <h3>Paper</h3>
+        <div class="controls-row">
+            Width: <input type=text name=paper_width value={{setup.paper_width}} class="controls-input">
+    </div>
+    <div class="controls-row">
+        Height: <input type=text name=paper_height value={{setup.paper_height}} class="controls-input">
+    </div>
+    <div class="controls-row">
+        Offset: <input type=text name=paper_offset value={{setup.paper_offset_h}} class="controls-input">
+    </div>
+    </div>
+    <div class="controls-block border rounded">  
+        <h3>Drawing</h3>
+        <div class="controls-row">
+            Width: <input type=text name=drawing_width value={{setup.drawing_width}} class="controls-input">
+    </div>
+    <div class="controls-row">
+        Height: <input type=text name=drawing_height value={{setup.drawing_height}} class="controls-input">
+    </div>
+    <div class="controls-row">
+        Offset: <input type=text name=drawing_offset  value={{setup.drawing_offset_h}} class="controls-input">
+    </div>
+    </div>
+  </form>
+</div>

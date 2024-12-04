@@ -8,27 +8,37 @@ from flask import Flask, render_template, send_from_directory, flash, request, r
 import os
 import random
 import string
+from drawbot_converter.transformer_svgpathtools import TransformerSVGPathTools
 
-from drawbot_converter.svg_transform import BotSetup
+from drawbot_converter.bot_setup import BotSetup
 import drawbot_converter.process as pr
+
+from flask_executor import Executor
 
 
 app = Flask(__name__)
+executor = Executor(app)
+
+app.secret_key = 'your-secret-key-here'  # Add this line after creating the Flask app
 
 
 UPLOAD_FOLDER = 'data/uploaded'
 ALLOWED_EXTENSIONS = {'svg'}
 app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 
+setup = BotSetup().add_magnets(inset=180,height=100)
+
 @app.route("/", methods=['GET', 'POST'])
 def index():
+    print("Showing index page...")
     if request.method == 'POST' and good_file():
-        return handle_upload(request.files['file'])
-    return render_template('index.html')
+        print("Got a file uploaded!")
+        return handle_upload(request.files['file'],request.form)
+    return render_template('index.html',setup=setup,tasks=executor.futures)
 
 @app.route("/design/<int:id>")
 def design(id):
-    return render_template('design.html',id=id)
+    return render_template('design.html',id=id,setup=setup)
 
 @app.route('/data/<path:filepath>')
 def data(filepath):
@@ -41,41 +51,19 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/upload', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            id = rand_id()
-            filename = f"{id}.svg"
-            path = os.path.join(app.config['UPLOAD_PATH'], filename)
-            file.save(path)
-            process_file(id)
-            return redirect(f'/design/{id}')
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
-def handle_upload(file):
+def handle_upload(file,form):
+    global setup
+    setup = form_to_setup(form)
     id = rand_id()
-    filename = f"{id}.svg"
-    path = os.path.join(app.config['UPLOAD_PATH'], filename)
+    dir_path = os.path.join(app.config['UPLOAD_PATH'], id)
+    print(f"Ensuring directory {dir_path} exists")
+    os.makedirs(dir_path, exist_ok=True)
+    path = os.path.join(dir_path, "input.svg")
+    print(f"Saving to {path}")
     file.save(path)
-    process_file(id)
+    print(f"Processing {id}")   
+    process_file(id,setup)
+    print(f"Redirecting to {id}")
     return redirect(f'/design/{id}')
 
 def good_file():
@@ -97,23 +85,37 @@ def good_file():
         return False
     return True
 
-def process_file(id,setup:BotSetup=None):
-    if not setup:
-        setup = BotSetup(
-            bot_width=760,
-            bot_height=580,
-            paper_width=584,
-            paper_height=420,
-            drawing_width=200,
-            drawing_height=200
-        ).center_paper().center_drawing()
-    pr.process(setup=setup,
-        file=f"data/uploaded/{id}.svg",
-        intermediate=f"data/processed/{id}.svg",
-        check_svg=f"data/check_svg/{id}.gcode",
-        gcode=f"data/gcode/{id}.gcode",
-        check_gcode=f"data/check/{id}.svg"
+def process_file(id,setup:BotSetup):
+    processor = TransformerSVGPathTools()
+    processor.pipeline(setup=setup,
+        input_svg=f"data/uploaded/{id}/input.svg",
+        processed_svg=f"data/uploaded/{id}/processed.svg",
+        output_gcode=f"data/uploaded/{id}/output.gcode",
+        check_gcode=f"data/uploaded/{id}/gcode_check.svg",
+        annot_check_gcode=f"data/uploaded/{id}/check.svg"
         )
+
+def form_to_setup(form):
+    global setup
+    print(f"form_to_setup Start: {setup}")
+    if 'bot_width' in form:
+        setup.bot_width=int(form['bot_width'])
+    if 'bot_height' in form:
+        setup.bot_height=int(form['bot_height'])
+    if 'paper_width' in form:
+        setup.paper_width=int(form['paper_width'])
+    if 'paper_height' in form:
+        setup.paper_height=int(form['paper_height'])
+    if 'drawing_width' in form:
+        setup.drawing_width=int(form['drawing_width'])
+    if 'drawing_height' in form:
+        setup.drawing_height=int(form['drawing_height'])
+    if 'paper_offset' in form:
+        setup.top_center_paper(int(form['paper_offset']))
+    if 'drawing_offset' in form:
+        setup.top_center_drawing(int(form['drawing_offset']))
+    print(f"form_to_setup End : {setup}")
+    return setup
 
 
 if __name__ == "__main__":

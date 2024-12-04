@@ -1,0 +1,2 @@
+FLASK_APP=drawbot_server
+FLASK_ENV=development
