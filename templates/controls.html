@@ -16,26 +16,66 @@
     <div class="controls-block border rounded">  
         <h3>Paper</h3>
         <div class="controls-row">
-            Width: <input type=text name=paper_width value={{setup.paper_width}} class="controls-input">
+            Width: <input type=text name=paper_width value={{setup.paper_width}} class="controls-input" id="paper_width">
     </div>
     <div class="controls-row">
-        Height: <input type=text name=paper_height value={{setup.paper_height}} class="controls-input">
+        Height: <input type=text name=paper_height value={{setup.paper_height}} class="controls-input" id="paper_height">
     </div>
     <div class="controls-row">
         Offset: <input type=text name=paper_offset value={{setup.paper_offset_h}} class="controls-input">
+    </div>
+    <div class="controls-row">
+        <button type="button" onclick="setSize('A3')">A3</button>
     </div>
     </div>
     <div class="controls-block border rounded">  
         <h3>Drawing</h3>
         <div class="controls-row">
-            Width: <input type=text name=drawing_width value={{setup.drawing_width}} class="controls-input">
+            Width: <input type=text name=drawing_width value={{setup.drawing_width}} class="controls-input" id="drawing_width">
     </div>
     <div class="controls-row">
-        Height: <input type=text name=drawing_height value={{setup.drawing_height}} class="controls-input">
+        Height: <input type=text name=drawing_height value={{setup.drawing_height}} class="controls-input" id="drawing_height">
     </div>
     <div class="controls-row">
-        Offset: <input type=text name=drawing_offset  value={{setup.drawing_offset_h}} class="controls-input">
+        Offset: <input type=text name=drawing_offset value={{setup.drawing_offset_h-setup.paper_offset_h}} class="controls-input">
+    </div>
+    <div class="controls-row">
+        Fill: <input type=checkbox name=fill_target {% if setup.fill_target %}checked{% endif %} class="controls-input">
+    </div>
+    <div class="controls-row">
+        <button type="button" onclick="setSize('Rodalm21x30')">Rodalm</button>
+    </div>
+    <div class="controls-row">
+        {% if id is defined %}
+        <button type="submit" name="action" value="reprocess">Reprocess</button>
+        {% endif %}
     </div>
     </div>
   </form>
 </div>
+
+<script>
+const sizes = {
+    'A3': {
+        paper: { width: 420, height: 297 },
+    },
+    'A2': {
+        paper: { width: 420, height: 594 },
+    },
+    'Rodalm21x30': {
+        drawing: { width: 180, height: 130 },
+    }
+};
+
+function setSize(name) {
+    const size = sizes[name];
+    if (size.paper) {
+        document.getElementById('paper_width').value = size.paper.width;
+        document.getElementById('paper_height').value = size.paper.height;
+    }
+    if (size.drawing) {
+        document.getElementById('drawing_width').value = size.drawing.width;
+        document.getElementById('drawing_height').value = size.drawing.height;
+    }
+}
+</script>

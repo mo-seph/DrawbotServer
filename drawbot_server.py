@@ -36,9 +36,20 @@ def index():
         return handle_upload(request.files['file'],request.form)
     return render_template('index.html',setup=setup,tasks=executor.futures)
 
-@app.route("/design/<int:id>")
+@app.route("/design/<int:id>", methods=['GET','POST'])
 def design(id):
-    return render_template('design.html',id=id,setup=setup)
+    global setup
+    if request.method == 'POST':
+        if request.form.get('action') == 'reprocess':
+            # Reprocess existing file
+            setup = form_to_setup(request.form)
+            process_file(str(id), setup)
+            return redirect(f'/design/{id}')
+        elif good_file():
+            # Handle new file upload
+            print("Got a file uploaded!")
+            return handle_upload(request.files['file'], request.form, f"{id}")
+    return render_template('design.html', id=id, setup=setup)
 
 @app.route('/data/<path:filepath>')
 def data(filepath):
@@ -51,10 +62,11 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def handle_upload(file,form):
+def handle_upload(file,form,id=None):
     global setup
     setup = form_to_setup(form)
-    id = rand_id()
+    if not id:
+        id = rand_id()
     dir_path = os.path.join(app.config['UPLOAD_PATH'], id)
     print(f"Ensuring directory {dir_path} exists")
     os.makedirs(dir_path, exist_ok=True)
@@ -98,6 +110,7 @@ def process_file(id,setup:BotSetup):
 def form_to_setup(form):
     global setup
     print(f"form_to_setup Start: {setup}")
+    print(f"form: {form}")
     if 'bot_width' in form:
         setup.bot_width=int(form['bot_width'])
     if 'bot_height' in form:
@@ -110,9 +123,13 @@ def form_to_setup(form):
         setup.drawing_width=int(form['drawing_width'])
     if 'drawing_height' in form:
         setup.drawing_height=int(form['drawing_height'])
+    if 'fill_target' in form:
+        setup.fill_target= True if form['fill_target'] == 'on' else False
     if 'paper_offset' in form:
+        setup.paper_offset_h = int(form['paper_offset'])
         setup.top_center_paper(int(form['paper_offset']))
     if 'drawing_offset' in form:
+        setup.drawing_offset_h = int(form['drawing_offset'])
         setup.top_center_drawing(int(form['drawing_offset']))
     print(f"form_to_setup End : {setup}")
     return setup
