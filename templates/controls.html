@@ -51,19 +51,53 @@
         {% endif %}
     </div>
     </div>
+    <div class="controls-block border rounded">
+        <h3>Controls</h3>
+        <div class="controls-row">
+            <button type="submit" name="control" value="calibrate">Cal</button>
+        </div>
+        <div class="controls-row">
+            <button type="submit" name="control" value="pen_up">Pen Up</button>
+        </div>
+        <div class="controls-row">
+            <button type="submit" name="control" value="home">Home</button>
+        </div>
+        {% if id is defined %}
+        <div class="controls-row">
+            <button type="submit" name="control" value="draw_file">Draw</button>
+        </div>
+        {% endif %}
+      </div>
+    {% if tasks %}
+        <div class="controls-block border rounded">
+            <h3>Active Tasks</h3>
+            <div class="tasks">
+                <ul>
+                {% for task in tasks %}
+                    <div class="task">
+                        <span class="task-name">{{task.command}}</span>
+                        <span class="task-status">{{task.status}}</span>
+                        <span class="task-start-time">{{task.start_time}}</span>
+                        <button type="submit" name="cancel_task" value="{{task.task_id}}">X</button>
+                    </div>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
   </form>
 </div>
 
 <script>
 const sizes = {
     'A3': {
-        paper: { width: 420, height: 297 },
+        paper: { width: 420, height: 297, offset: 80 },
     },
     'A2': {
-        paper: { width: 420, height: 594 },
+        paper: { width: 420, height: 594, offset: 80 },
     },
     'Rodalm21x30': {
-        drawing: { width: 180, height: 130 },
+        drawing: { width: 180, height: 130, offset: 70 },
     }
 };
 
@@ -79,3 +113,4 @@ function setSize(name) {
     }
 }
 </script>
+
