@@ -37,7 +37,7 @@ app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 
 setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30()
 fake = 'FAKE_DRAWBOT' in os.environ
-controller = DrawbotControl(fake=fake)
+controller = DrawbotControl(fake=fake,verbose=True)
 print(f"Using fake drawbot: {fake}")
 
 @app.route("/", methods=['GET', 'POST'])

@@ -22,6 +22,7 @@ class DrawbotControl:
             print("Startingfake serial")
             return
         try:
+            print(f"Starting real serial on {self.serialport}")
             self.serial_port=serial.Serial()
             self.serial_port.port=self.serialport
             self.serial_port.timeout=self.timeout
@@ -46,6 +47,8 @@ class DrawbotControl:
             raise e
 
     def send_drawbot_commands(self, commands:list[str],cancel_event=None):
+        if self.verbose:
+            print(f"Sending {len(commands)} commands")
         self.start_serial()
         comment_match = re.compile("^#")
         response = ""
@@ -69,6 +72,8 @@ class DrawbotControl:
                     self.serial_port.write(str(line))
                 response += self.read_serial_response()
         self.finish_serial()
+        if self.verbose:
+            print(f"Finished sending {len(commands)} commands")
         return response        #command = f"./drawbot {command}"
         #process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
