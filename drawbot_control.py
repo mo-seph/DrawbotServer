@@ -9,7 +9,7 @@ import time
 
 
 class DrawbotControl:
-    def __init__(self, serialport='/dev/ttyACM0', timeout=1, baud='57600', verbose=True, fake=False):
+    def __init__(self, serialport='/dev/ttyACM0', timeout=120, baud='57600', verbose=True, fake=False):
         self.serialport = serialport
         self.timeout = timeout
         self.baud = baud    
@@ -55,6 +55,8 @@ class DrawbotControl:
         response = ""
         num_commands = len(commands)
         for i, line in enumerate(commands):
+            if self.verbose:
+                print(f"Sending command {i} of {num_commands}: {line}")
             if cancel_event and cancel_event.is_set():
                 self.serial_port.write("d0")
                 print("Cancel event set, stopping execution and raising pen")
@@ -69,8 +71,8 @@ class DrawbotControl:
                     time.sleep(1)
                 else:
                     if self.verbose:
-                        print(f"-> {line}", end='')  # Use f-string and end=''
-                    self.serial_port.write(str(line))
+                        print(f"-> {line}")  # Use f-string and end=''
+                    self.serial_port.write(str(line).encode('utf-8'))
                 response += self.read_serial_response()
         self.finish_serial()
         if self.verbose:
