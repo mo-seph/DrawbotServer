@@ -29,6 +29,7 @@ class DrawbotControl:
             self.serial_port.writeTimeout = self.timeout
             self.serial_port.baudrate=self.baud
             self.serial_port.open()
+            print("serial opened")
         except IOError as e:
             print("robot not connected?", e)
             raise e
