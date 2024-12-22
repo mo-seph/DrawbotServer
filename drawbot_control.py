@@ -19,7 +19,7 @@ class DrawbotControl:
 
     def start_serial(self):
         if self.fake:
-            print("fake serial")
+            print("Startingfake serial")
             return
         try:
             self.serial_port=serial.Serial()
@@ -34,7 +34,7 @@ class DrawbotControl:
 
     def finish_serial(self):
         if self.fake:
-            print("fake serial close")
+            print("Finishing fake serial")
             return
         try:
             if self.verbose:

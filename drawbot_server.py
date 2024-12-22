@@ -36,7 +36,9 @@ ALLOWED_EXTENSIONS = {'svg'}
 app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 
 setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30()
-controller = DrawbotControl(fake=True)
+fake = 'FAKE_DRAWBOT' in os.environ
+controller = DrawbotControl(fake=fake)
+print(f"Using fake drawbot: {fake}")
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -121,6 +123,7 @@ def cancel_drawbot_task(task_id):
             future.cancel_event.set()
             #future.cancel()  # Still call cancel() for good measure
             print(f"Cancelled task: {future.command}")
+            executor.submit(controller.pen_up)
             break
 
 def rand_id():
