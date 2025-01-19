@@ -27,6 +27,18 @@
         <div id="main" class="container bg-light">
             {% block content %} {% endblock %}
         </div>
+        <div id="recent_files">
+            <h2>Recent Files</h2>
+            <div class="recent_files_container">
+                {% for file in recent_files %}
+                    <div class="recent_file">
+                        <a href="{{ file.design_link }}">{{ file.id }}</a>
+                    <img src="{{ file.svg_link }}" alt="{{ file.id }}" />
+                      <div class="date">{{ file.modified_time }}</div>
+                    </div>
+                  {% endfor %}
+            </div>
+        </div>
     </div>
 
     <!-- Optional JavaScript -->

@@ -1,3 +1,4 @@
 flask
 python-dotenv
 flask-executor
+ha-mqtt-discoverable

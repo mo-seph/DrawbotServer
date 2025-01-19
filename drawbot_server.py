@@ -17,8 +17,11 @@ from flask_executor import Executor
 from datetime import datetime
 
 from drawbot_control import DrawbotControl
+from drawbot_ha import HAConnection
 import uuid  # Add this import at the top
 import threading
+
+
 
 
 app = Flask(__name__)
@@ -40,6 +43,9 @@ fake = 'FAKE_DRAWBOT' in os.environ
 controller = DrawbotControl(fake=fake,verbose=True)
 print(f"Using fake drawbot: {fake}")
 
+#ha = None
+ha = HAConnection(controller)
+
 @app.route("/", methods=['GET', 'POST'])
 def index():
     print("Showing index page...")
@@ -59,6 +65,8 @@ def process_request(request,id=None):
     global futures
     command_regex = r"command_(.*)"
     task_regex = r"task_(.*)"
+    print(f"request: {request}")
+    print(f"ID: {id}")
     if request.method == 'POST':
         if request.form.get('action') == 'reprocess' and id:
             # Reprocess existing file
@@ -81,10 +89,25 @@ def process_request(request,id=None):
     # Clean up completed tasks before rendering
     futures = [f for f in futures if not f.done()]
     
+    # Get a list of the most recent 10 directories in the data/upload folder
+    upload_dir = os.path.join(app.config['UPLOAD_PATH'])
+    recent_dirs = sorted(os.listdir(upload_dir), key=lambda x: os.path.getmtime(os.path.join(upload_dir, x)), reverse=True)[:10]
+    # For each directory, make a dict with the id, modified time, link to the design page and to the uploaded SVG file
+    recent_dirs_info = []
+    for dir in recent_dirs:
+        dir_path = os.path.join(upload_dir, dir)
+        dir_id = dir
+        modified_time = datetime.fromtimestamp(os.path.getmtime(dir_path)).strftime('%Y-%m-%d %H:%M:%S')
+        design_link = f"/design/{dir_id}"
+        svg_link = f"/data/uploaded/{dir_id}/input.svg"
+        recent_dirs_info.append({'id': dir_id, 'modified_time': modified_time, 'design_link': design_link, 'svg_link': svg_link})
+    
+    print(f"ID for render: {id}")
     return render_template('design.html' if id else 'index.html', 
                          id=id, 
                          setup=setup,
-                         tasks=futures)
+                         tasks=futures,
+                         recent_files=recent_dirs_info)
 
 def handle_drawbot_command(command,id=None):
     print(f"handle_drawbot_command: {command}")
@@ -109,6 +132,13 @@ def handle_drawbot_command(command,id=None):
         future.start_time = datetime.now()
         future.task_id = str(uuid.uuid4())
         future.cancel_event = cancel_event  # Store the event on the future
+        if command == "draw_file":
+            # Get the absolute path to the input.svg file
+            base_url = url_for(f"index",_external=True)
+            image_url = f"{base_url}/data/uploaded/{id}/input.svg"
+            print(f"Setting image URL: {image_url}")
+            if ha:
+                ha.set_image_url(image_url)
         return future
     else:
         print(f"Unknown command: {command}")
@@ -204,4 +234,4 @@ def form_to_setup(form):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True,host='0.0.0.0')

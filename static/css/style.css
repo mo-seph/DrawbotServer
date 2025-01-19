@@ -1,4 +1,3 @@
-
 .upload-container {
     display: flex;
     flex-direction: column;
@@ -68,4 +67,36 @@
 
 #sidebar.active {
     margin-left: -135px;
+}
+
+.recent_files_container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 5px;
+    background-color: lightgray;
+    overflow-y: auto;
+    height: calc(100vh - 20px);
+    max-height: calc(100vh - 20px);
+    gap: 5px;
+}
+
+.recent_file {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid black;
+    padding: 5px;
+    background-color: white;
+}
+
+.recent_file img {
+    max-width: 100px;
+    max-height: 100px;
+}
+
+.recent_file .date {
+    font-size: 10px;
+    color: gray;
 }
