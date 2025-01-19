@@ -119,7 +119,7 @@ class DrawbotControl:
             except Exception as e:
                 print(f"Error sending command {i}: {e}")
         self.finish_serial()
-        self.send_estimated_end_time(None)
+        self.send_estimated_time_left(-1)
         self.send_progress(100)
         self.send_state("idle")
         if self.verbose:

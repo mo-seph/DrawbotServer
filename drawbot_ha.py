@@ -119,8 +119,11 @@ class HAConnection:
     def set_estimated_time_left(self,time_left:float):
         try:
             if time_left:
-                end_date = datetime.now() + timedelta(seconds=time_left)
-                self.end_time_text.set_text(end_date.strftime('%Y-%m-%d %H:%M:%S'))
+                if time_left < 0:
+                    self.end_time_text.set_text("Done")
+                else:
+                    end_date = datetime.now() + timedelta(seconds=time_left)
+                    self.end_time_text.set_text(end_date.strftime('%Y-%m-%d %H:%M:%S'))
             else:
                 self.end_time_text.set_text("N/A")
         except Exception as e:
