@@ -21,10 +21,13 @@ class HAConnection:
         drawbot_type="Fake" if self.fake else "Real"
         drawbot_manufacturer="Dave" if self.fake else "Matt Venn"
         hostname=socket.gethostname()
+        uid=f"{drawbot_type}_{hostname}".replace("\\s","_")
+        self.uid = uid
         self.device_info = DeviceInfo(
             name=f"Drawbot {hostname} {drawbot_type}",
             model=drawbot_type,
-            identifiers=f"Polarbot_{drawbot_type}_{hostname}",
+            identifiers=f"Polarbot_{uid}",
+            unique_id=uid,
             manufacturer=drawbot_manufacturer,
             configuration_url=config_url
         )
@@ -41,7 +44,7 @@ class HAConnection:
         print("Adding progress sensor")
         self.progress_sensor_info = SensorInfo(
             name="Progress",
-            unique_id="drawbot_progress",
+            unique_id=f"drawbot_progress_{uid}",
             icon="mdi:progress-wrench",
             device=self.device_info,
             unit_of_measurement="%",
@@ -52,7 +55,7 @@ class HAConnection:
         print("Adding current state text")
         self.current_state_text_info = TextInfo(
             name="Current State",
-            unique_id="drawbot_current_state",
+            unique_id=f"drawbot_current_state_{uid}",
             icon="mdi:home",
             device=self.device_info,
         )
@@ -62,7 +65,7 @@ class HAConnection:
         print("Adding end time text")
         self.end_time_text_info = TextInfo(
             name="End Time",
-            unique_id="drawbot_end_time",
+            unique_id=f"drawbot_end_time_{uid}",
             icon="mdi:clock",
             device=self.device_info,
         )
@@ -72,7 +75,7 @@ class HAConnection:
         print("Adding image sensor")
         self.image_sensor_info = ImageInfo(
             name="Image",
-            unique_id="drawbot_image",
+            unique_id=f"drawbot_image_{uid}",
             icon="mdi:image",
             device=self.device_info,
         )
@@ -82,7 +85,7 @@ class HAConnection:
         print("Adding config URL Entity")
         self.config_url_entity_info = TextInfo(
             name="Config URL",
-            unique_id="drawbot_config_url",
+            unique_id=f"drawbot_config_url_{uid}",
             icon="mdi:clock",
             device=self.device_info,
         )
@@ -133,7 +136,7 @@ class HAConnection:
         print(f"Adding button {name}")
         button_info = ButtonInfo(
             name=name,
-            unique_id=f"drawbot_{name}",
+            unique_id=f"drawbot_{name}_{self.uid}",
             icon=icon,
             device=self.device_info,
         )
