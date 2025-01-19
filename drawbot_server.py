@@ -45,13 +45,15 @@ print(f"Using fake drawbot: {fake}")
 
 if fake:
     base_url = "http://localhost:5001"
+    mqtt_server = "moominpappa.local"
 else:
     base_url = "http://polarbot.local:5000"
+    mqtt_server = "192.168.2.6"
 
 
 #ha = None
 # Check if HA has been defined
-ha = HAConnection(controller,config_url=base_url)
+ha = HAConnection(controller,config_url=base_url,mqtt_host=mqtt_server)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
