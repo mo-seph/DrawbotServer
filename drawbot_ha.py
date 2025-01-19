@@ -24,7 +24,7 @@ class HAConnection:
         self.device_info = DeviceInfo(
             name=f"Drawbot {hostname} {drawbot_type}",
             model=drawbot_type,
-            identifiers=f"drawbot_{drawbot_type}_{hostname}",
+            identifiers=f"Polarbot_{drawbot_type}_{hostname}",
             manufacturer=drawbot_manufacturer,
             configuration_url=config_url
         )
