@@ -2,14 +2,15 @@ from ha_mqtt_discoverable import Settings, DeviceInfo
 from ha_mqtt_discoverable.sensors import BinarySensor, BinarySensorInfo, Button, ButtonInfo, Sensor, SensorInfo, Text, TextInfo, Image, ImageInfo
 import os
 from typing import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from drawbot_control import DrawbotControl
-
+import socket
 import logging
+from flask import url_for
 #logging.basicConfig(level=logging.DEBUG)
 
 class HAConnection:
-    def __init__(self,drawbot_control:DrawbotControl,mqtt_host="moominpappa.local",):
+    def __init__(self,drawbot_control:DrawbotControl,config_url:str,mqtt_host="moominpappa.local"):
         self.drawbot_control = drawbot_control
         drawbot_control.add_state_listener(self)
         print("Connecting to MQTT / HA")
@@ -17,12 +18,18 @@ class HAConnection:
         print(self.mqtt_settings)
         self.fake = 'FAKE_DRAWBOT' in os.environ
         print("Setting up device info")
+        drawbot_type="Fake" if self.fake else "Real"
+        drawbot_manufacturer="Dave" if self.fake else "Matt Venn"
+        hostname=socket.gethostname()
         self.device_info = DeviceInfo(
-            name="Drawbot",
-            model="fake" if self.fake else "real",
-            identifiers="drawbot",
-            manufacturer="mattyboombatty"
+            name=f"Drawbot {hostname} {drawbot_type}",
+            model=drawbot_type,
+            identifiers=f"drawbot_{drawbot_type}_{hostname}",
+            manufacturer=drawbot_manufacturer,
+            configuration_url=config_url
         )
+        print("HA Device Info:\n----------")
+        print(self.device_info)
         self.null_callback = lambda a, b, c: print(f"Got text message {a} {b} {c}")
         #self.mqtt_settings.add_device(self.device_info)
         print("Adding buttons")
@@ -71,23 +78,53 @@ class HAConnection:
         )
         self.image_sensor = Image(Settings(mqtt=self.mqtt_settings,entity=self.image_sensor_info),self.null_callback)
         self.image_sensor.set_url("https://www.google.com/images/branding/googlelogo/2x/googlelogo_light_color_272x92dp.png")
+
+        print("Adding config URL Entity")
+        self.config_url_entity_info = TextInfo(
+            name="Config URL",
+            unique_id="drawbot_config_url",
+            icon="mdi:clock",
+            device=self.device_info,
+        )
+        self.config_url_entity = Text(Settings(mqtt=self.mqtt_settings,entity=self.config_url_entity_info),self.null_callback)
+        self.config_url_entity.set_text(config_url)
+        
         print("Finished setting up HA")
 
     def set_state(self,state:str):
-        self.current_state_text.set_text(state)
+        try:    
+            self.current_state_text.set_text(state)
+        except Exception as e:
+            print(f"Error setting state: {e}")
 
     def set_progress(self,progress:float):
-        self.progress_sensor.set_state(progress)
+        try:
+            self.progress_sensor.set_state(progress)
+        except Exception as e:
+            print(f"Error setting progress: {e}")
 
     def set_image_url(self,image_url:str):
-        print(f"Setting image URL for HA: {image_url}")
-        self.image_sensor.set_url(image_url)
+        try:
+            print(f"Setting image URL for HA: {image_url}")
+            self.image_sensor.set_url(image_url)
+        except Exception as e:
+            print(f"Error setting image URL: {e}")
 
-    def set_estimated_end_time(self,end_time:datetime):
-        if end_time:
-            self.end_time_text.set_text(end_time.strftime('%Y-%m-%d %H:%M:%S'))
-        else:
-            self.end_time_text.set_text("N/A")
+    def set_config_url(self,config_url:str):
+        try:
+            self.config_url_entity.set_text(config_url)
+        except Exception as e:
+            print(f"Error setting config URL: {e}")
+
+    def set_estimated_time_left(self,time_left:float):
+        try:
+            if time_left:
+                end_date = datetime.now() + timedelta(seconds=time_left)
+                self.end_time_text.set_text(end_date.strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                self.end_time_text.set_text("N/A")
+        except Exception as e:
+            print(f"Error setting estimated end time: {e}")
 
     def add_button(self,name:str,icon:str,callback:Callable):
         print(f"Adding button {name}")

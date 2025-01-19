@@ -4,7 +4,9 @@
 # flask run
 
 
-from flask import Flask, render_template, send_from_directory, flash, request, redirect, url_for
+from flask import Flask, render_template, send_from_directory, flash, request, redirect, url_for, current_app
+from flask.signals import appcontext_pushed
+
 import os
 import random
 import string
@@ -22,8 +24,6 @@ import uuid  # Add this import at the top
 import threading
 
 
-
-
 app = Flask(__name__)
 app.config['EXECUTOR_TYPE'] = 'thread'
 app.config['EXECUTOR_MAX_WORKERS'] = 1
@@ -38,13 +38,20 @@ UPLOAD_FOLDER = 'data/uploaded'
 ALLOWED_EXTENSIONS = {'svg'}
 app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 
-setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30()
+setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30().paper_offset_h(80).drawing_offset_h(80)
 fake = 'FAKE_DRAWBOT' in os.environ
 controller = DrawbotControl(fake=fake,verbose=True)
 print(f"Using fake drawbot: {fake}")
 
+if fake:
+    base_url = "http://localhost:5001"
+else:
+    base_url = "http://polarbot.local:5000"
+
+
 #ha = None
-ha = HAConnection(controller)
+# Check if HA has been defined
+ha = HAConnection(controller,config_url=base_url)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -234,4 +241,6 @@ def form_to_setup(form):
 
 
 if __name__ == "__main__":
+    print("Starting app")
     app.run(debug=True,host='0.0.0.0')
+    print("App started")

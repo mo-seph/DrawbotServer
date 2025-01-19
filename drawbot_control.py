@@ -12,7 +12,7 @@ class StateListener:
         pass
     def set_progress(self,progress:float):
         pass
-    def set_estimated_end_time(self,end_time:Optional[datetime]):
+    def set_estimated_time_left(self,time_left:float):
         pass
     def set_image_url(self,image_url:str):
         pass
@@ -39,9 +39,9 @@ class DrawbotControl:
         for listener in self.state_listeners:
             listener.set_progress(progress)
 
-    def send_estimated_end_time(self,end_time:datetime):
+    def send_estimated_time_left(self,time_left:float):
         for listener in self.state_listeners:
-            listener.set_estimated_end_time(end_time)
+            listener.set_estimated_time_left(time_left)
 
     def start_serial(self):
         if self.fake:
@@ -85,38 +85,39 @@ class DrawbotControl:
         start_time = time.time()
         self.send_progress(last_proportion)
         for i, line in enumerate(commands):
-            if self.verbose:
-                print(f"Sending command {i} of {num_commands}: {line} ({self.proportion})")
-            if cancel_event and cancel_event.is_set():
-                self.serial_port.write("d0")
-                print("Cancel event set, stopping execution and raising pen")
-                break
-            self.proportion = i / num_commands
-            # if there's a significant difference and it's been more than 10 seconds since the last update:
-            if abs(self.proportion - last_proportion) > 0.01 and time.time() - last_update > 10:
-                # Round to the nearest 0.01
-                self.send_progress(round(self.proportion*100, 0))
-                last_proportion = self.proportion
-                last_update = time.time()
-                # Estimate the end time/date    
-                time_remaining = (time.time() - start_time) * (1 - self.proportion) / self.proportion
-                end_time = time.time() + time_remaining
-                print(f"Estimated end date/time: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                self.send_estimated_end_time(end_time)
+            try:
+                if self.verbose:
+                    print(f"Sending command {i} of {num_commands}: {line} ({self.proportion})")
+                if cancel_event and cancel_event.is_set():
+                    self.serial_port.write("d0")
+                    print("Cancel event set, stopping execution and raising pen")
+                    break
+                self.proportion = i / num_commands
+                # if there's a significant difference and it's been more than 10 seconds since the last update:
+                if abs(self.proportion - last_proportion) > 0.01 and time.time() - last_update > 10:
+                    # Round to the nearest 0.01
+                    self.send_progress(round(self.proportion*100, 0))
+                    last_proportion = self.proportion
+                    last_update = time.time()
+                    # Estimate the end time/date    
+                    time_remaining = (time.time() - start_time) * (1 - self.proportion) / self.proportion
+                    self.send_estimated_time_left(time_remaining)
 
-                
-            if comment_match.match(line):
-                print(f"skipping line: {line}")  # Use f-string
-            elif line is not None:
-                # Encode string to bytes before sending
-                if self.fake:
-                    print(f"Fake send -> {line}")
-                    time.sleep(self.fake_delay)
-                else:
-                    if self.verbose:
-                        print(f"-> {line}")  # Use f-string and end=''
-                    self.serial_port.write(str(line).encode('utf-8'))
-                response += self.read_serial_response()
+                    
+                if comment_match.match(line):
+                    print(f"skipping line: {line}")  # Use f-string
+                elif line is not None:
+                    # Encode string to bytes before sending
+                    if self.fake:
+                        print(f"Fake send -> {line}")
+                        time.sleep(self.fake_delay)
+                    else:
+                        if self.verbose:
+                            print(f"-> {line}")  # Use f-string and end=''
+                        self.serial_port.write(str(line).encode('utf-8'))
+                    response += self.read_serial_response()
+            except Exception as e:
+                print(f"Error sending command {i}: {e}")
         self.finish_serial()
         self.send_estimated_end_time(None)
         self.send_progress(100)
@@ -168,7 +169,8 @@ class DrawbotControl:
         return output
 
     def draw_file(self, filepath:str,cancel_event=None):
-        self.send_state(f"drawing {filepath}")
+        fp = filepath.split("/")[-1]
+        self.send_state(f"drawing {fp}")
         print(f"draw_file: {filepath}")
         gcode = ["d0"] + self.readFile(filepath) + ["d0"] + ["g380,250"]
         output = self.send_drawbot_commands(gcode,cancel_event)
