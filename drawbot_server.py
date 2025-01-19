@@ -38,7 +38,7 @@ UPLOAD_FOLDER = 'data/uploaded'
 ALLOWED_EXTENSIONS = {'svg'}
 app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 
-setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30().paper_offset_h(80).drawing_offset_h(80)
+setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30()
 fake = 'FAKE_DRAWBOT' in os.environ
 controller = DrawbotControl(fake=fake,verbose=True)
 print(f"Using fake drawbot: {fake}")
