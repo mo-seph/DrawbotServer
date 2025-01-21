@@ -10,7 +10,7 @@ from typing import Optional
 class StateListener:
     def set_state(self,state:str):
         pass
-    def set_progress(self,progress:float):
+    def set_progress(self,progress:float,done:int,total:int):
         pass
     def set_estimated_time_left(self,time_left:float):
         pass
@@ -32,16 +32,25 @@ class DrawbotControl:
         self.state_listeners.append(listener)
     
     def send_state(self,state:str):
-        for listener in self.state_listeners:
-            listener.set_state(state)
+        try:
+            for listener in self.state_listeners:
+                listener.set_state(state)
+        except Exception as e:
+            print(f"Error sending state: {e}")
 
-    def send_progress(self,progress:float):
-        for listener in self.state_listeners:
-            listener.set_progress(progress)
+    def send_progress(self,progress:float,done:int,total:int):
+        try:
+            for listener in self.state_listeners:
+                listener.set_progress(progress,done,total)
+        except Exception as e:
+            print(f"Error sending progress: {e}")
 
     def send_estimated_time_left(self,time_left:float):
-        for listener in self.state_listeners:
-            listener.set_estimated_time_left(time_left)
+        try:
+            for listener in self.state_listeners:
+                listener.set_estimated_time_left(time_left)
+        except Exception as e:
+            print(f"Error sending estimated time left: {e}")
 
     def start_serial(self):
         if self.fake:
@@ -83,20 +92,22 @@ class DrawbotControl:
         last_proportion = 0
         last_update = time.time()
         start_time = time.time()
-        self.send_progress(last_proportion)
+        self.verbose = True
+        print("Sending progress...")
+        self.send_progress(last_proportion,0,num_commands)
         for i, line in enumerate(commands):
             try:
                 if self.verbose:
                     print(f"Sending command {i} of {num_commands}: {line} ({self.proportion})")
                 if cancel_event and cancel_event.is_set():
-                    self.serial_port.write("d0")
+                    self.do_stop()
                     print("Cancel event set, stopping execution and raising pen")
                     break
                 self.proportion = i / num_commands
                 # if there's a significant difference and it's been more than 10 seconds since the last update:
                 if abs(self.proportion - last_proportion) > 0.01 and time.time() - last_update > 10:
                     # Round to the nearest 0.01
-                    self.send_progress(round(self.proportion*100, 0))
+                    self.send_progress(round(self.proportion*100, 0),i,num_commands)
                     last_proportion = self.proportion
                     last_update = time.time()
                     # Estimate the end time/date    
@@ -118,14 +129,24 @@ class DrawbotControl:
                     response += self.read_serial_response()
             except Exception as e:
                 print(f"Error sending command {i}: {e}")
+        self.do_stop()
         self.finish_serial()
-        self.send_estimated_time_left(-1)
-        self.send_progress(100)
-        self.send_state("idle")
         if self.verbose:
             print(f"Finished sending {len(commands)} commands")
         return response        #command = f"./drawbot {command}"
         #process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def do_stop(self):
+        try:
+            self.serial_port.write("d0")
+        except Exception as e:
+            print(f"Error stopping drawbot: {e}")
+        try:    
+            self.send_progress(0,0,0)
+            self.send_estimated_time_left(-1)
+            self.send_state("idle")
+        except Exception as e:
+            print(f"Error sending progress: {e}")
 
     """
     this requires the robot to respond in the expected way, where all responsed end with "ok"
@@ -169,7 +190,7 @@ class DrawbotControl:
         return output
 
     def draw_file(self, filepath:str,cancel_event=None):
-        fp = filepath.split("/")[-1]
+        fp = filepath.split("/")[-2]
         self.send_state(f"drawing {fp}")
         print(f"draw_file: {filepath}")
         gcode = ["d0"] + self.readFile(filepath) + ["d0"] + ["g380,250"]

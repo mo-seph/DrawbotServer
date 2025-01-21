@@ -52,6 +52,19 @@ class HAConnection:
         self.progress_sensor = Sensor(Settings(mqtt=self.mqtt_settings,entity=self.progress_sensor_info))
         self.progress_sensor.set_state(0)
 
+        print("Adding progress amount sensor")
+        self.progress_amount_sensor_info = TextInfo(
+            name="Progress Amount",
+            unique_id=f"drawbot_progress_amount_{uid}",
+            icon="mdi:progress-wrench",
+            device=self.device_info,
+        )
+        self.progress_amount_sensor = Text(Settings(mqtt=self.mqtt_settings,entity=self.progress_amount_sensor_info),self.null_callback)
+        self.progress_amount_sensor.set_text("0/0")
+
+
+
+
         print("Adding current state text")
         self.current_state_text_info = TextInfo(
             name="Current State",
@@ -82,6 +95,48 @@ class HAConnection:
         self.image_sensor = Image(Settings(mqtt=self.mqtt_settings,entity=self.image_sensor_info),self.null_callback)
         self.image_sensor.set_url("https://www.google.com/images/branding/googlelogo/2x/googlelogo_light_color_272x92dp.png")
 
+        '''
+        {
+  "component": "image",
+  "device": {
+    "name": "Drawbot TUD501604 Fake",
+    "model": "Fake",
+    "manufacturer": "Dave",
+    "identifiers": "Polarbot_Fake_TUD501604",
+    "configuration_url": "http://localhost:5001"
+  },
+  "icon": "mdi:image",
+  "name": "Image",
+  "unique_id": "drawbot_image_Fake_TUD501604",
+  "payload_available": "online",
+  "payload_not_available": "offline",
+  "state_topic": "hmd/image/Drawbot-TUD501604-Fake/Image/state",
+  "json_attributes_topic": "hmd/image/Drawbot-TUD501604-Fake/Image/attributes",
+  "command_topic": "hmd/image/Drawbot-TUD501604-Fake/Image/command"
+}
+        '''
+        '''
+        {
+  "component": "text",
+  "device": {
+    "name": "Drawbot TUD501604 Fake",
+    "model": "Fake",
+    "manufacturer": "Dave",
+    "identifiers": "Polarbot_Fake_TUD501604",
+    "configuration_url": "http://localhost:5001"
+  },
+  "icon": "mdi:clock",
+  "name": "Config URL",
+  "unique_id": "drawbot_config_url_Fake_TUD501604",
+  "max": 255,
+  "min": 0,
+  "mode": "text",
+  "state_topic": "hmd/text/Drawbot-TUD501604-Fake/Config-URL/state",
+  "json_attributes_topic": "hmd/text/Drawbot-TUD501604-Fake/Config-URL/attributes",
+  "command_topic": "hmd/text/Drawbot-TUD501604-Fake/Config-URL/command"
+}
+        '''
+
         print("Adding config URL Entity")
         self.config_url_entity_info = TextInfo(
             name="Config URL",
@@ -100,9 +155,10 @@ class HAConnection:
         except Exception as e:
             print(f"Error setting state: {e}")
 
-    def set_progress(self,progress:float):
+    def set_progress(self,progress:float,done:int,total:int):
         try:
             self.progress_sensor.set_state(progress)
+            self.progress_amount_sensor.set_text(f"{done}/{total}")
         except Exception as e:
             print(f"Error setting progress: {e}")
 
