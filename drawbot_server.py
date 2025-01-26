@@ -51,9 +51,10 @@ else:
     mqtt_server = "192.168.2.6"
 
 
-#ha = None
+ha = None
 # Check if HA has been defined
-ha = HAConnection(controller,config_url=base_url,mqtt_host=mqtt_server)
+if not fake:
+    ha = HAConnection(controller,config_url=base_url,mqtt_host=mqtt_server)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
