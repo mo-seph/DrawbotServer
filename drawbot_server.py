@@ -177,7 +177,7 @@ def upload_svg_file(file,form,id=None):
     setup = form_to_setup(form)
     if not id:
         id = rand_id()
-    dir_path = os.path.join(app.config['UPLOAD_PATH'], id)
+    dir_path = os.path.join(app.config['UPLOAD_PATH'], str(id))
     print(f"Ensuring directory {dir_path} exists")
     os.makedirs(dir_path, exist_ok=True)
     path = os.path.join(dir_path, "input.svg")

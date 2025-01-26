@@ -26,6 +26,7 @@
     </div>
     <div class="controls-row">
         <button type="button" onclick="setSize('A3')">A3</button>
+        <button type="button" onclick="setSize('A2')">A2</button>
     </div>
     </div>
     <div class="controls-block border rounded">  
@@ -43,7 +44,13 @@
         Fill: <input type=checkbox name=fill_target {% if setup.fill_target %}checked{% endif %} class="controls-input">
     </div>
     <div class="controls-row">
-        <button type="button" onclick="setSize('Rodalm21x30')">Rodalm</button>
+        <button type="button" onclick="setSize('Rodalm13x18')">Rodalm 13x18</button>
+        <button type="button" onclick="setSize('Rodalm13x18_raw')">Rodalm 13x18 Full Frame</button>
+        <button type="button" onclick="setSize('Rodalm21x30')">Rodalm 21x30</button>
+        <button type="button" onclick="setSize('Rodalm30x40')">Rodalm 30x40</button>
+        <button type="button" onclick="setSize('Rodalm40x50')">Rodalm 40x50</button>
+        <button type="button" onclick="setSize('Sannahed25')">Sannahed 25</button>
+        <button type="button" onclick="setSize('Sannahed25_raw')">Sannahed 25 Full Frame</button>
     </div>
     <div class="controls-row">
         {% if id is defined %}
@@ -54,7 +61,7 @@
     <div class="controls-block border rounded">
         <h3>Controls</h3>
         <div class="controls-row">
-            <button type="submit" name="control" value="calibrate">Cal</button>
+            <button type="submit" name="control" value="calibrate">Calibrate</button>
         </div>
         <div class="controls-row">
             <button type="submit" name="control" value="pen_up">Pen Up</button>
@@ -101,7 +108,25 @@ const sizes = {
     },
     'Rodalm21x30': {
         drawing: { width: 180, height: 130, offset: 70 },
-    }
+    },
+    'Rodalm21x30_raw': {
+        drawing: { width: 210, height: 300, offset: 70 },
+    },
+    'Rodalm13x18': {
+        drawing: { width: 150, height: 100, offset: 70 },
+    },
+    'Rodalm30x40': {
+        drawing: { width: 210, height: 300, offset: 70 },
+    },
+    'Rodalm40x50': {
+        drawing: { width: 300, height: 400, offset: 70 },
+    },
+    'Sannahed25': {
+        drawing: { width: 130, height: 130, offset: 70 },
+    },
+    'Sannahed25_raw': {
+        drawing: { width: 250, height: 250, offset: 70 },
+    },
 };
 
 function setSize(name) {
