@@ -95,6 +95,7 @@ class DrawbotControl:
         self.verbose = True
         print("Sending progress...")
         self.send_progress(last_proportion,0,num_commands)
+        self.send_estimated_time_left(num_commands)
         for i, line in enumerate(commands):
             try:
                 if self.verbose:
