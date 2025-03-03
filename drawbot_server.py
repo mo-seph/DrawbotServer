@@ -56,6 +56,41 @@ ha = None
 if not fake:
     ha = HAConnection(controller,config_url=base_url,mqtt_host=mqtt_server)
 
+# Add this near the top with other global variables
+PAPER_SIZES = {
+    'A3': {
+        'paper': {'width': 420, 'height': 297, 'offset': 80},
+    },
+    'A3 Low': {
+        'paper': {'width': 420, 'height': 297, 'offset': 230},
+    },
+    'A2': {
+        'paper': {'width': 420, 'height': 594, 'offset': 80},
+    },
+    'Rodalm21x30': {
+        'drawing': {'width': 180, 'height': 130, 'offset': 70},
+    },
+    'Rodalm21x30 Full Frame': {
+        'drawing': {'width': 210, 'height': 300, 'offset': 70},
+    },
+    'Rodalm13x18': {
+        'drawing': {'width': 150, 'height': 100, 'offset': 70},
+    },
+    'Rodalm30x40': {
+        'drawing': {'width': 210, 'height': 300, 'offset': 70},
+    },
+    'Rodalm40x50': {
+        'drawing': {'width': 300, 'height': 400, 'offset': 70},
+    },
+    'Sannahed25': {
+        'drawing': {'width': 130, 'height': 130, 'offset': 70},
+    },
+    'Sannahed25 Full Frame': {
+        'paper': {'width': 420, 'height': 297, 'offset': 230},
+        'drawing': {'width': 250, 'height': 250, 'offset': 10},
+    },
+}
+
 @app.route("/", methods=['GET', 'POST'])
 def index():
     print("Showing index page...")
@@ -117,7 +152,8 @@ def process_request(request,id=None):
                          id=id, 
                          setup=setup,
                          tasks=futures,
-                         recent_files=recent_dirs_info)
+                         recent_files=recent_dirs_info,
+                         sizes=PAPER_SIZES)
 
 def handle_drawbot_command(command,id=None):
     print(f"handle_drawbot_command: {command}")

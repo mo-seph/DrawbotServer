@@ -5,14 +5,88 @@
         <button type=submit class="btn btn-primary">Upload</button>
     </div>
     <div class="controls-block border rounded">
-      <h3>Bot</h3>
-        <div class="controls-row">
-            Width: {{setup.bot_width}}
-      </div>
-      <div class="controls-row">
-          Height: {{setup.bot_height}}
-      </div>
+
     </div>
+    <div class="controls-block border rounded">
+        <h3>Controls</h3>
+        <div class="controls-row">
+            <button type="submit" name="control" value="calibrate" title="Calibrate">
+                <span class="mdi mdi-tape-measure"></span>
+            </button>
+            <button type="submit" name="control" value="pen_up" title="Pen Up">
+                <span class="mdi mdi-pen-off"></span>
+            </button>
+        </div>
+        <div class="controls-row">
+
+            <button type="submit" name="control" value="home" title="Home">
+                <span class="mdi mdi-home"></span>
+            </button>
+            <button type="submit" name="control" value="pen_down" title="Pen Down">
+                <span class="mdi mdi-pen"></span>
+            </button>
+        </div>
+        <div class="controls-row">
+            {% if id is defined %}
+            <button type="submit" name="control" value="draw_file" title="Draw" class="draw-button">
+                <span class="mdi mdi-pencil"></span>
+                Draw
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% if tasks %}
+    <div class="controls-block border rounded">
+        <h3>Running</h3>
+        <div class="tasks">
+            {% for task in tasks %}
+                <div class="task">
+                    <div class="task-name">{{task.command}}</div>
+                    <div class="task-status">{{task.status}}</div>
+                    <div class="task-start-time">{{task.start_time.strftime('%H:%M:%S')}}</div>
+                    <button type="submit" name="cancel_task" value="{{task.task_id}}" class="task-cancel">X</button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+    <div class="controls-block border rounded">  
+  <div class="dropdown">
+    <div class="dropdown">
+        <button type="button" class="btn btn-secondary dropdown-toggle" onclick="toggleBotMenu()">
+            Bot Info
+        </button>
+        <div id="botMenu" class="dropdown-content">
+            <div class="bot-info-row">
+                Width: {{setup.bot_width}}
+            </div>
+            <div class="bot-info-row">
+                Height: {{setup.bot_height}}
+            </div>
+            <div class="bot-info-row">
+                Min Offset: {{setup.minimum_y_offset}}
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-secondary dropdown-toggle" onclick="toggleSetupMenu()">
+        Configs
+    </button>
+    <div id="setupMenu" class="dropdown-content">
+        <h4> Complete</h4>
+        {% for name, size in sizes.items() if size.paper and size.drawing %}
+            <button type="button" onclick="setSize('{{ name }}')">{{ name }}</button>
+        {% endfor %}
+        <h4>Paper</h4>
+        {% for name, size in sizes.items() if size.paper and not size.drawing %}
+            <button type="button" onclick="setSize('{{ name }}')">{{ name }}</button>
+        {% endfor %}
+        <h4>Drawing</h4>
+        {% for name, size in sizes.items() if size.drawing and not size.paper %}
+            <button type="button" onclick="setSize('{{ name }}')">{{ name }}</button>
+        {% endfor %}
+    </div>
+</div>
+</div>
     <div class="controls-block border rounded">  
         <h3>Paper</h3>
         <div class="controls-row">
@@ -22,12 +96,9 @@
         Height: <input type=text name=paper_height value={{setup.paper_height}} class="controls-input" id="paper_height">
     </div>
     <div class="controls-row">
-        Offset: <input type=text name=paper_offset value={{setup.paper_offset_h}} class="controls-input">
+        Offset: <input type=text name=paper_offset value={{setup.paper_offset_h}} class="controls-input" id="paper_offset" oninput="validateOffsets()">
     </div>
-    <div class="controls-row">
-        <button type="button" onclick="setSize('A3')">A3</button>
-        <button type="button" onclick="setSize('A2')">A2</button>
-    </div>
+
     </div>
     <div class="controls-block border rounded">  
         <h3>Drawing</h3>
@@ -38,107 +109,90 @@
         Height: <input type=text name=drawing_height value={{setup.drawing_height}} class="controls-input" id="drawing_height">
     </div>
     <div class="controls-row">
-        Offset: <input type=text name=drawing_offset value={{setup.drawing_offset_h-setup.paper_offset_h}} class="controls-input">
+        Offset: <input type=text name=drawing_offset value={{setup.drawing_offset_h-setup.paper_offset_h}} class="controls-input" id="drawing_offset" oninput="validateOffsets()">
     </div>
     <div class="controls-row">
         Fill: <input type=checkbox name=fill_target {% if setup.fill_target %}checked{% endif %} class="controls-input">
     </div>
-    <div class="controls-row">
-        <button type="button" onclick="setSize('Rodalm13x18')">Rodalm 13x18</button>
-        <button type="button" onclick="setSize('Rodalm13x18_raw')">Rodalm 13x18 Full Frame</button>
-        <button type="button" onclick="setSize('Rodalm21x30')">Rodalm 21x30</button>
-        <button type="button" onclick="setSize('Rodalm30x40')">Rodalm 30x40</button>
-        <button type="button" onclick="setSize('Rodalm40x50')">Rodalm 40x50</button>
-        <button type="button" onclick="setSize('Sannahed25')">Sannahed 25</button>
-        <button type="button" onclick="setSize('Sannahed25_raw')">Sannahed 25 Full Frame</button>
+    <div id="offset-error" class="error-message" style="display: none;">
+        Total offset must be at least {{setup.minimum_y_offset}}mm
+    </div>
+
+
     </div>
     <div class="controls-row">
         {% if id is defined %}
         <button type="submit" name="action" value="reprocess">Reprocess</button>
         {% endif %}
     </div>
-    </div>
-    <div class="controls-block border rounded">
-        <h3>Controls</h3>
-        <div class="controls-row">
-            <button type="submit" name="control" value="calibrate">Calibrate</button>
-        </div>
-        <div class="controls-row">
-            <button type="submit" name="control" value="pen_up">Pen Up</button>
-        </div>
-        <div class="controls-row">
-            <button type="submit" name="control" value="pen_down">Pen Down</button>
-        </div>
-        <div class="controls-row">
-            <button type="submit" name="control" value="home">Home</button>
-        </div>
-        {% if id is defined %}
-        <div class="controls-row">
-            <button type="submit" name="control" value="draw_file">Draw</button>
-        </div>
-        {% endif %}
-      </div>
-    {% if tasks %}
-        <div class="controls-block border rounded">
-            <h3>Active Tasks</h3>
-            <div class="tasks">
-                <ul>
-                {% for task in tasks %}
-                    <div class="task">
-                        <span class="task-name">{{task.command}}</span>
-                        <span class="task-status">{{task.status}}</span>
-                        <span class="task-start-time">{{task.start_time}}</span>
-                        <button type="submit" name="cancel_task" value="{{task.task_id}}">X</button>
-                    </div>
-                {% endfor %}
-                </ul>
-            </div>
-        </div>
-    {% endif %}
+
   </form>
 </div>
 
 <script>
-const sizes = {
-    'A3': {
-        paper: { width: 420, height: 297, offset: 80 },
-    },
-    'A2': {
-        paper: { width: 420, height: 594, offset: 80 },
-    },
-    'Rodalm21x30': {
-        drawing: { width: 180, height: 130, offset: 70 },
-    },
-    'Rodalm21x30_raw': {
-        drawing: { width: 210, height: 300, offset: 70 },
-    },
-    'Rodalm13x18': {
-        drawing: { width: 150, height: 100, offset: 70 },
-    },
-    'Rodalm30x40': {
-        drawing: { width: 210, height: 300, offset: 70 },
-    },
-    'Rodalm40x50': {
-        drawing: { width: 300, height: 400, offset: 70 },
-    },
-    'Sannahed25': {
-        drawing: { width: 130, height: 130, offset: 70 },
-    },
-    'Sannahed25_raw': {
-        drawing: { width: 250, height: 250, offset: 70 },
-    },
-};
+const setups = {{ sizes|tojson }};
 
 function setSize(name) {
-    const size = sizes[name];
+    const size = setups[name];
     if (size.paper) {
         document.getElementById('paper_width').value = size.paper.width;
         document.getElementById('paper_height').value = size.paper.height;
+        if (size.paper.offset) {
+            document.getElementById('paper_offset').value = size.paper.offset;
+        }
     }
     if (size.drawing) {
         document.getElementById('drawing_width').value = size.drawing.width;
         document.getElementById('drawing_height').value = size.drawing.height;
+        if (size.drawing.offset) {
+            document.getElementById('drawing_offset').value = size.drawing.offset;
+        }
     }
 }
+
+function toggleSetupMenu() {
+    document.getElementById("setupMenu").classList.toggle("show");
+}
+
+function toggleBotMenu() {
+    document.getElementById("botMenu").classList.toggle("show");
+}
+
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+    if (!event.target.matches('.dropdown-toggle')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
+function validateOffsets() {
+    const paperOffset = parseInt(document.getElementById('paper_offset').value) || 0;
+    const drawingOffset = parseInt(document.getElementById('drawing_offset').value) || 0;
+    const minOffset = {{setup.minimum_y_offset}};
+    const totalOffset = paperOffset + drawingOffset;
+    
+    const errorElement = document.getElementById('offset-error');
+    const paperInput = document.getElementById('paper_offset');
+    const drawingInput = document.getElementById('drawing_offset');
+    
+    if (totalOffset < minOffset) {
+        errorElement.style.display = 'block';
+        paperInput.classList.add('error');
+        drawingInput.classList.add('error');
+    } else {
+        errorElement.style.display = 'none';
+        paperInput.classList.remove('error');
+        drawingInput.classList.remove('error');
+    }
+}
+
+// Run validation on page load
+document.addEventListener('DOMContentLoaded', validateOffsets);
 </script>
 
