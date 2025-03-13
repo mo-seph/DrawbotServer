@@ -1,6 +1,7 @@
 
 .DS_Store
 
+data/*
 data/check/*
 data/check_svg/*
 data/gcode/*
