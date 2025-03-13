@@ -18,10 +18,11 @@ import drawbot_converter.process as pr
 from flask_executor import Executor
 from datetime import datetime
 
-from drawbot_control import DrawbotControl
+from drawbot_control import DrawbotControl, FakeDrawbotOutput, SerialDrawbotOutput, PNGOutput
 from drawbot_ha import HAConnection
 import uuid  # Add this import at the top
 import threading
+import socket
 
 
 app = Flask(__name__)
@@ -35,26 +36,49 @@ app.secret_key = 'your-secret-key-here'  # Add this line after creating the Flas
 
 
 UPLOAD_FOLDER = 'data/uploaded'
+CURRENT_IMAGE_PATH = 'data/png_output.png'
+NO_DRAWING_IMAGE_PATH = 'static/no_drawing.png'
 ALLOWED_EXTENSIONS = {'svg'}
 app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 
 setup = BotSetup().standard_magnets().a3_paper().rodalm_21_30()
 fake = 'FAKE_DRAWBOT' in os.environ
-controller = DrawbotControl(fake=fake,verbose=True)
+outputs = []
+if fake:
+    outputs.append(FakeDrawbotOutput(fake_delay=0.01,verbose=False))
+else:
+    outputs.append(SerialDrawbotOutput())
+
+outputs.append(PNGOutput(output_path=CURRENT_IMAGE_PATH))
+
+controller = DrawbotControl(outputs=outputs,verbose=True)
+
 print(f"Using fake drawbot: {fake}")
 
-if fake:
-    base_url = "http://localhost:5001"
-    mqtt_server = "moominpappa.local"
-else:
-    base_url = "http://polarbot.local:5000"
-    mqtt_server = "192.168.2.6"
+def get_local_ip():
+    """Get the local IP address of the machine"""
+    try:
+        # Create a socket and connect to an external server
+        # This doesn't actually establish a connection but gives us the local IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "localhost"  # Fallback to localhost if we can't get IP
+
+local_address = get_local_ip()
+print(f"Local address: {local_address}")
+port = 5001 if fake else 5000
+
+base_url = f"http://{local_address}:{port}"
+mqtt_server = "moominpappa.local" if fake else "192.168.2.6"
 
 
-ha = None
-# Check if HA has been defined
-if not fake:
-    ha = HAConnection(controller,config_url=base_url,mqtt_host=mqtt_server)
+
+#if not fake:
+ha = HAConnection(controller,config_url=base_url,mqtt_host=mqtt_server,image_path=CURRENT_IMAGE_PATH, no_drawing_image_path=NO_DRAWING_IMAGE_PATH)
 
 # Add this near the top with other global variables
 PAPER_SIZES = {
@@ -90,6 +114,15 @@ PAPER_SIZES = {
         'drawing': {'width': 250, 'height': 250, 'offset': 10},
     },
 }
+
+# Update base_url when handling requests
+@app.before_request
+def update_base_url():
+    global base_url
+    if fake:
+        # Get actual port from request
+        server_port = request.environ.get('SERVER_PORT', '5000')
+        base_url = f"http://{local_address}:{server_port}"
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -156,6 +189,7 @@ def process_request(request,id=None):
                          sizes=PAPER_SIZES)
 
 def handle_drawbot_command(command,id=None):
+    global setup
     print(f"handle_drawbot_command: {command}")
     
     command_tasks = {
@@ -163,28 +197,55 @@ def handle_drawbot_command(command,id=None):
         'pen_down': [controller.pen_down],
         'calibrate': [controller.calibrate],
         'home': [controller.home],
-        'draw_file': [controller.draw_file,f"data/uploaded/{id}/output.gcode"]
+        'draw_file': [controller.send_file,f"data/uploaded/{id}/output.gcode",setup]
     }
     
     if command in command_tasks:
         print(f"Submitting command: {command}")
         cancel_event = threading.Event()
-        if len(command_tasks[command]) == 2:
-            future = executor.submit(command_tasks[command][0], command_tasks[command][1],cancel_event)
+        print(f"Command tasks for {command}: {command_tasks[command]}")
+        if len(command_tasks[command]) > 1:
+            print(f"Submitting with args: func={command_tasks[command][0]}, args={command_tasks[command][1:]}, cancel_event={cancel_event}")
+            future = executor.submit(command_tasks[command][0], *command_tasks[command][1:], cancel_event)
         else:
-            future = executor.submit(command_tasks[command][0],cancel_event)
+            print(f"Submitting without args: func={command_tasks[command][0]}, cancel_event={cancel_event}")
+            future = executor.submit(command_tasks[command][0], cancel_event)
+        
         # Add metadata including unique ID to the future
         future.command = command
         future.start_time = datetime.now()
         future.task_id = str(uuid.uuid4())
         future.cancel_event = cancel_event  # Store the event on the future
+        
+        # Add a done callback to handle any errors
+        def handle_future_error(future):
+            try:
+                # This will raise the exception if there was one
+                future.result()
+            except Exception as e:
+                import traceback
+                print(f"\nError in future execution for command '{command}':")
+                print(f"Error type: {type(e).__name__}")
+                print(f"Error message: {str(e)}")
+                print("Full stack trace:")
+                traceback.print_exc()
+                print(f"\nCommand details:")
+                print(f"Function: {command_tasks[command][0]}")
+                if len(command_tasks[command]) > 1:
+                    print(f"Arguments: {command_tasks[command][1:]}")
+        
+        future.add_done_callback(handle_future_error)
+        
         if command == "draw_file":
             # Get the absolute path to the input.svg file
             base_url = url_for(f"index",_external=True)
             image_url = f"{base_url}/data/uploaded/{id}/input.svg"
             print(f"Setting image URL: {image_url}")
-            if ha:
-                ha.set_image_url(image_url)
+            ha.set_target_image(image_url)
+        else:
+            ha.set_target_image(None)
+        
+        print(f"Future: {future}")
         return future
     else:
         print(f"Unknown command: {command}")

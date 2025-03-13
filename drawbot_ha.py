@@ -10,7 +10,8 @@ from flask import url_for
 #logging.basicConfig(level=logging.DEBUG)
 
 class HAConnection:
-    def __init__(self,drawbot_control:DrawbotControl,config_url:str,mqtt_host="moominpappa.local"):
+    def __init__(self,drawbot_control:DrawbotControl,config_url:str,mqtt_host="moominpappa.local",image_path:str=None,no_drawing_image_path:str='static/no_drawing.svg'):
+        self.image_path = image_path
         self.drawbot_control = drawbot_control
         drawbot_control.add_state_listener(self)
         print("Connecting to MQTT / HA")
@@ -22,6 +23,8 @@ class HAConnection:
         drawbot_manufacturer="Dave" if self.fake else "Matt Venn"
         hostname=socket.gethostname()
         uid=f"{drawbot_type}_{hostname}".replace("\\s","_")
+        self.image_url = f"{config_url}/{image_path}"
+        self.no_drawing_image_url = f"{config_url}/{no_drawing_image_path}"
         self.uid = uid
         self.device_info = DeviceInfo(
             name=f"Drawbot {hostname} {drawbot_type}",
@@ -29,7 +32,8 @@ class HAConnection:
             identifiers=f"Polarbot_{uid}",
             unique_id=uid,
             manufacturer=drawbot_manufacturer,
-            configuration_url=config_url
+            #configuration_url=config_url
+            configuration_url=self.image_url
         )
         print("HA Device Info:\n----------")
         print(self.device_info)
@@ -87,55 +91,25 @@ class HAConnection:
 
         print("Adding image sensor")
         self.image_sensor_info = ImageInfo(
-            name="Image",
+            name="Current Drawing",
             unique_id=f"drawbot_image_{uid}",
             icon="mdi:image",
             device=self.device_info,
+            url_topic=f"hmd/image/{uid}/Image/state",
         )
-        self.image_sensor = Image(Settings(mqtt=self.mqtt_settings,entity=self.image_sensor_info),self.null_callback)
-        self.image_sensor.set_url("https://www.google.com/images/branding/googlelogo/2x/googlelogo_light_color_272x92dp.png")
+        self.image_sensor = Image(Settings(mqtt=self.mqtt_settings,entity=self.image_sensor_info))
+        self.image_sensor.set_url(self.image_url)
 
-        '''
-        {
-  "component": "image",
-  "device": {
-    "name": "Drawbot TUD501604 Fake",
-    "model": "Fake",
-    "manufacturer": "Dave",
-    "identifiers": "Polarbot_Fake_TUD501604",
-    "configuration_url": "http://localhost:5001"
-  },
-  "icon": "mdi:image",
-  "name": "Image",
-  "unique_id": "drawbot_image_Fake_TUD501604",
-  "payload_available": "online",
-  "payload_not_available": "offline",
-  "state_topic": "hmd/image/Drawbot-TUD501604-Fake/Image/state",
-  "json_attributes_topic": "hmd/image/Drawbot-TUD501604-Fake/Image/attributes",
-  "command_topic": "hmd/image/Drawbot-TUD501604-Fake/Image/command"
-}
-        '''
-        '''
-        {
-  "component": "text",
-  "device": {
-    "name": "Drawbot TUD501604 Fake",
-    "model": "Fake",
-    "manufacturer": "Dave",
-    "identifiers": "Polarbot_Fake_TUD501604",
-    "configuration_url": "http://localhost:5001"
-  },
-  "icon": "mdi:clock",
-  "name": "Config URL",
-  "unique_id": "drawbot_config_url_Fake_TUD501604",
-  "max": 255,
-  "min": 0,
-  "mode": "text",
-  "state_topic": "hmd/text/Drawbot-TUD501604-Fake/Config-URL/state",
-  "json_attributes_topic": "hmd/text/Drawbot-TUD501604-Fake/Config-URL/attributes",
-  "command_topic": "hmd/text/Drawbot-TUD501604-Fake/Config-URL/command"
-}
-        '''
+        print("Adding Target Image sensor")
+        self.target_image_sensor_info = ImageInfo(
+            name="Target Drawing",
+            unique_id=f"drawbot_target_image_{uid}",
+            icon="mdi:image",
+            device=self.device_info,
+            url_topic=f"hmd/image/{uid}_target/Image/state",
+        )
+        self.target_image_sensor = Image(Settings(mqtt=self.mqtt_settings,entity=self.target_image_sensor_info))
+        self.target_image_sensor.set_url(self.no_drawing_image_url)
 
         print("Adding config URL Entity")
         self.config_url_entity_info = TextInfo(
@@ -159,21 +133,24 @@ class HAConnection:
         try:
             self.progress_sensor.set_state(progress)
             self.progress_amount_sensor.set_text(f"{done}/{total}")
+            self.image_sensor.set_url(self.image_url)
         except Exception as e:
             print(f"Error setting progress: {e}")
-
-    def set_image_url(self,image_url:str):
-        try:
-            print(f"Setting image URL for HA: {image_url}")
-            self.image_sensor.set_url(image_url)
-        except Exception as e:
-            print(f"Error setting image URL: {e}")
 
     def set_config_url(self,config_url:str):
         try:
             self.config_url_entity.set_text(config_url)
         except Exception as e:
             print(f"Error setting config URL: {e}")
+
+    def set_target_image(self,image_path:str=None):
+        try:
+            if image_path:
+                self.target_image_sensor.set_url(image_path)
+            else:
+                self.target_image_sensor.set_url(self.no_drawing_image_url)
+        except Exception as e:
+            print(f"Error setting target image: {e}")
 
     def set_estimated_time_left(self,time_left:float):
         try:

@@ -2,3 +2,13 @@ flask
 python-dotenv
 flask-executor
 ha-mqtt-discoverable
+
+svgutils
+svg_to_gcode
+lxml
+numpy
+svgwrite
+svgpathtools
+
+pyserial
+Pillow
