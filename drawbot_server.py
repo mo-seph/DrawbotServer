@@ -47,7 +47,7 @@ outputs = []
 if fake:
     outputs.append(FakeDrawbotOutput(fake_delay=0.01,verbose=False))
 else:
-    outputs.append(SerialDrawbotOutput())
+    outputs.append(SerialDrawbotOutput(verbose=False))
 
 outputs.append(PNGOutput(output_path=CURRENT_IMAGE_PATH))
 

@@ -258,8 +258,7 @@ class PNGOutput(DrawbotOutput):
                 # Then move the temporary file into place (atomic operation)
                 os.replace(self.temp_path, self.output_path)
             except Exception as e:
-                if self.verbose:
-                    print(f"Error saving PNG: {e}")
+                print(f"Error saving PNG: {e}")
                 # Clean up temp file if it exists
                 try:
                     if os.path.exists(self.temp_path):
@@ -365,21 +364,21 @@ class DrawbotControl:
         last_proportion = 0
         last_update = time.time()
         start_time = time.time()
-        print("Sending progress...")
         self.send_progress(last_proportion,0,num_commands)
         self.send_estimated_time_left(num_commands)
         
         for i, line in enumerate(commands):
             try:
                 if self.verbose:
-                    print(f"Sending command {i} of {num_commands}: {line} ({self.proportion})")
+                    command_rate = i / (time.time() - start_time)
+                    print(f"Sending command {i} of {num_commands}: {line} ({self.proportion}) (at {command_rate} commands/second)")
                 if cancel_event and cancel_event.is_set():
                     self.do_stop()
                     print("Cancel event set, stopping execution and raising pen")
                     break
                     
                 self.proportion = i / num_commands
-                if abs(self.proportion - last_proportion) > 0.01 and time.time() - last_update > 10:
+                if abs(self.proportion - last_proportion) > 0.01 or time.time() - last_update > 30:
                     self.send_progress(round(self.proportion*100, 0),i,num_commands)
                     last_proportion = self.proportion
                     last_update = time.time()
