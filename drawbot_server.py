@@ -24,6 +24,9 @@ import uuid  # Add this import at the top
 import threading
 import socket
 
+import functools
+print = functools.partial(print, flush=True)
+
 
 app = Flask(__name__)
 app.config['EXECUTOR_TYPE'] = 'thread'

@@ -12,6 +12,9 @@ from datetime import datetime
 from typing import Optional, Protocol, List, abstractmethod
 from abc import ABC
 
+import functools
+print = functools.partial(print, flush=True)
+
 
 class StateListener:
     def set_state(self,state:str):
