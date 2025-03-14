@@ -369,7 +369,7 @@ class DrawbotControl:
         
         for i, line in enumerate(commands):
             try:
-                if self.verbose:
+                if self.verbose and i % 100 == 0:
                     command_rate = i / (time.time() - start_time)
                     print(f"Sending command {i} of {num_commands}: {line} ({self.proportion}) (at {command_rate} commands/second)")
                 if cancel_event and cancel_event.is_set():
